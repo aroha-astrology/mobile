@@ -4,6 +4,3 @@ project(':capacitor-android').projectDir = new File('../node_modules/.pnpm/@capa
 
 include ':capacitor-firebase-authentication'
 project(':capacitor-firebase-authentication').projectDir = new File('../node_modules/.pnpm/@capacitor-firebase+authent_de7bc8f55edd7b38f60b6116ed124516/node_modules/@capacitor-firebase/authentication/android')
-
-include ':capacitor-preferences'
-project(':capacitor-preferences').projectDir = new File('../node_modules/.pnpm/@capacitor+preferences@6.0.4_@capacitor+core@6.2.1/node_modules/@capacitor/preferences/android')

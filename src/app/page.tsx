@@ -1,21 +1,10 @@
-'use client';
-
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAuthStore } from '@/store/authStore';
-
-export default function EntryPage() {
-  const session = useAuthStore((s) => s.session);
-  const router = useRouter();
-
-  useEffect(() => {
-    if (session === null) router.replace('/login');
-    else if (session) router.replace('/home');
-  }, [session, router]);
-
+export default function FallbackPage() {
   return (
-    <main className="flex min-h-screen items-center justify-center">
-      <p className="text-sm opacity-60">Loading…</p>
+    <main className="min-h-screen flex flex-col items-center justify-center px-6 text-center gap-4">
+      <h1 className="text-2xl font-semibold">Aroha Astrology</h1>
+      <p className="text-sm opacity-60 max-w-xs">
+        Connecting to the app… If this screen stays, check your internet connection.
+      </p>
     </main>
   );
 }
