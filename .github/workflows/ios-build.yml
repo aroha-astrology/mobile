@@ -1,0 +1,48 @@
+name: iOS build (unsigned)
+
+# PARKED — do not expect this to pass yet.
+# The iOS project is in Swift Package Manager mode, but
+# @capacitor-firebase/authentication ships CocoaPods-only (no Package.swift),
+# so SPM resolution fails. Convert the platform to CocoaPods first:
+# see docs/ios-cocoapods-conversion.md. Kept here as a manual trigger only.
+
+on:
+  workflow_dispatch:
+
+jobs:
+  ios-build:
+    runs-on: macos-latest
+    env:
+      # URL the Capacitor shell loads. Set this secret to point the build at a
+      # specific frontend deploy (Vercel preview, prod, etc).
+      CAPACITOR_SERVER_URL: ${{ secrets.CAPACITOR_SERVER_URL }}
+      GOOGLE_SERVICE_INFO_PLIST: ${{ secrets.GOOGLE_SERVICE_INFO_PLIST }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - name: Decode GoogleService-Info.plist
+        if: ${{ env.GOOGLE_SERVICE_INFO_PLIST != '' }}
+        run: |
+          echo "$GOOGLE_SERVICE_INFO_PLIST" | base64 -d > ios/App/App/GoogleService-Info.plist
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - run: pnpm exec cap sync ios
+      # This is an SPM-based Capacitor project (ios/App/CapApp-SPM), so there is
+      # no Podfile and no pods-generated App.xcworkspace. Build the .xcodeproj
+      # directly; xcodebuild resolves the Swift Package dependencies itself.
+      - name: Build for simulator (no code signing)
+        working-directory: ios/App
+        run: |
+          xcodebuild build \
+            -project App.xcodeproj \
+            -scheme App \
+            -configuration Debug \
+            -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            CODE_SIGNING_ALLOWED=NO
