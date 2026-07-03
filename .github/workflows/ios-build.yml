@@ -1,0 +1,41 @@
+name: iOS build (unsigned)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  ios-build:
+    runs-on: macos-latest
+    env:
+      # URL the Capacitor shell loads. Set this secret to point the build at a
+      # specific frontend deploy (Vercel preview, prod, etc).
+      CAPACITOR_SERVER_URL: ${{ secrets.CAPACITOR_SERVER_URL }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - name: Decode GoogleService-Info.plist
+        if: ${{ secrets.GOOGLE_SERVICE_INFO_PLIST != '' }}
+        run: |
+          echo "${{ secrets.GOOGLE_SERVICE_INFO_PLIST }}" | base64 -d > ios/App/App/GoogleService-Info.plist
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - run: pnpm exec cap sync ios
+      - name: pod install
+        working-directory: ios/App
+        run: pod install
+      - name: Build for simulator (no code signing)
+        working-directory: ios/App
+        run: |
+          xcodebuild build \
+            -workspace App.xcworkspace \
+            -scheme App \
+            -configuration Debug \
+            -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            CODE_SIGNING_ALLOWED=NO
