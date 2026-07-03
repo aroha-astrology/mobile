@@ -10,6 +10,7 @@ jobs:
       # URL the Capacitor shell loads. Set this secret to point the build at a
       # specific frontend deploy (Vercel preview, prod, etc).
       CAPACITOR_SERVER_URL: ${{ secrets.CAPACITOR_SERVER_URL }}
+      GOOGLE_SERVICE_INFO_PLIST: ${{ secrets.GOOGLE_SERVICE_INFO_PLIST }}
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -20,9 +21,9 @@ jobs:
           node-version: 20
           cache: pnpm
       - name: Decode GoogleService-Info.plist
-        if: ${{ secrets.GOOGLE_SERVICE_INFO_PLIST != '' }}
+        if: ${{ env.GOOGLE_SERVICE_INFO_PLIST != '' }}
         run: |
-          echo "${{ secrets.GOOGLE_SERVICE_INFO_PLIST }}" | base64 -d > ios/App/App/GoogleService-Info.plist
+          echo "$GOOGLE_SERVICE_INFO_PLIST" | base64 -d > ios/App/App/GoogleService-Info.plist
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
       - run: pnpm exec cap sync ios
