@@ -27,14 +27,14 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
       - run: pnpm exec cap sync ios
-      - name: pod install
-        working-directory: ios/App
-        run: pod install
+      # This is an SPM-based Capacitor project (ios/App/CapApp-SPM), so there is
+      # no Podfile and no pods-generated App.xcworkspace. Build the .xcodeproj
+      # directly; xcodebuild resolves the Swift Package dependencies itself.
       - name: Build for simulator (no code signing)
         working-directory: ios/App
         run: |
           xcodebuild build \
-            -workspace App.xcworkspace \
+            -project App.xcodeproj \
             -scheme App \
             -configuration Debug \
             -sdk iphonesimulator \
