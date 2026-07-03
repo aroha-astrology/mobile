@@ -1,0 +1,67 @@
+{
+  "project_info": {
+    "project_number": "329242747489",
+    "project_id": "jyotish-ai-858e6",
+    "storage_bucket": "jyotish-ai-858e6.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:329242747489:android:8b8f33ca2bedb10024c020",
+        "android_client_info": {
+          "package_name": "ai.jyotish.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBD6terUtEs2dd3XyppQAYXcNyERpvMs8M"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:329242747489:android:88ca47449f8ed3c624c020",
+        "android_client_info": {
+          "package_name": "com.arohaastrology.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBD6terUtEs2dd3XyppQAYXcNyERpvMs8M"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:329242747489:android:492fb30ea30a77d424c020",
+        "android_client_info": {
+          "package_name": "com.jyotishai.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBD6terUtEs2dd3XyppQAYXcNyERpvMs8M"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
