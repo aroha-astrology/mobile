@@ -1,5 +1,11 @@
 name: iOS build (unsigned)
 
+# PARKED — do not expect this to pass yet.
+# The iOS project is in Swift Package Manager mode, but
+# @capacitor-firebase/authentication ships CocoaPods-only (no Package.swift),
+# so SPM resolution fails. Convert the platform to CocoaPods first:
+# see docs/ios-cocoapods-conversion.md. Kept here as a manual trigger only.
+
 on:
   workflow_dispatch:
 
