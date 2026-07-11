@@ -7,3 +7,6 @@ project(':capacitor-firebase-authentication').projectDir = new File('../../node_
 
 include ':capacitor-firebase-messaging'
 project(':capacitor-firebase-messaging').projectDir = new File('../../node_modules/.pnpm/@capacitor-firebase+messaging@6.3.1_@capacitor+core@6.2.1/node_modules/@capacitor-firebase/messaging/android')
+
+include ':capacitor-app'
+project(':capacitor-app').projectDir = new File('../../node_modules/.pnpm/@capacitor+app@6.0.3_@capacitor+core@6.2.1/node_modules/@capacitor/app/android')
