@@ -6,7 +6,7 @@ include ':capacitor-firebase-authentication'
 project(':capacitor-firebase-authentication').projectDir = new File('../../node_modules/.pnpm/@capacitor-firebase+authent_d5e78b926722dad45076b8c8d8556bf7/node_modules/@capacitor-firebase/authentication/android')
 
 include ':capacitor-firebase-messaging'
-project(':capacitor-firebase-messaging').projectDir = new File('../../node_modules/.pnpm/@capacitor-firebase+messaging@6.3.1_@capacitor+core@6.2.1/node_modules/@capacitor-firebase/messaging/android')
+project(':capacitor-firebase-messaging').projectDir = new File('../../node_modules/.pnpm/@capacitor-firebase+messagi_87707d94b7e9f0782cd4312066fd8463/node_modules/@capacitor-firebase/messaging/android')
 
 include ':capacitor-app'
 project(':capacitor-app').projectDir = new File('../../node_modules/.pnpm/@capacitor+app@6.0.3_@capacitor+core@6.2.1/node_modules/@capacitor/app/android')

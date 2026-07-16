@@ -7,6 +7,25 @@
   "client": [
     {
       "client_info": {
+        "mobilesdk_app_id": "1:498372917142:android:ecc44b698a26f882010fb7",
+        "android_client_info": {
+          "package_name": "com.aroha.astrology"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCFF8lusYPhIGZHXRC8EeyEqVwo2hC_Wzw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
         "mobilesdk_app_id": "1:498372917142:android:1d2eda21327981b3010fb7",
         "android_client_info": {
           "package_name": "com.arohaastrology.app"

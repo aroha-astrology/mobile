@@ -10,7 +10,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
 const serverUrl = process.env.CAPACITOR_SERVER_URL || 'https://app.arohaastrology.in';
 
 const config: CapacitorConfig = {
-  appId: 'com.arohaastrology.app',
+  appId: 'com.aroha.astrology',
   appName: 'Aroha Astrology',
   webDir: 'out',
   ...(serverUrl

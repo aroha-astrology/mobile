@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Badge tint FCM applies behind the white notification silhouette; sampled from the brand emblem's navy -->
+    <color name="notification_icon_color">#223F67</color>
+</resources>
