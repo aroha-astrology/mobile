@@ -27,6 +27,18 @@
             android:grantUriPermissions="true">
             <meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/file_paths" />
         </provider>
+
+        <!-- Without these, FCM falls back to the full-color square launcher icon as the
+             notification small icon, which Android renders using only its alpha channel
+             (opaque everywhere here) -> a solid white square in the status bar/shade. -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_icon"
+            android:resource="@drawable/ic_stat_notify"
+        />
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_color"
+            android:resource="@color/notification_icon_color"
+        />
     </application>
 
     <!-- Permissions -->
@@ -37,4 +49,5 @@
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <!-- Required on Android 13+ (API 33) for runtime notification permission -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="com.android.vending.BILLING" />
 </manifest>
