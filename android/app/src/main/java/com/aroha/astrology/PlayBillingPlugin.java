@@ -19,6 +19,7 @@ import com.getcapacitor.PluginCall;
 import com.getcapacitor.PluginMethod;
 import com.getcapacitor.annotation.CapacitorPlugin;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -27,10 +28,25 @@ public class PlayBillingPlugin extends Plugin implements PurchasesUpdatedListene
 
     private BillingClient billingClient;
     /** The in-flight purchase call, resolved/rejected from onPurchasesUpdated(). */
-    private PluginCall pendingPurchaseCall;
+    private volatile PluginCall pendingPurchaseCall;
+
+    private boolean billingReady = false;
+    private boolean connecting = false;
+    private final List<ConnectionWaiter> connectionWaiters = new ArrayList<>();
 
     private interface ConnectionCallback {
         void onReady();
+    }
+
+    /** Pairs a waiting call's success/failure continuations while a connection attempt is in flight. */
+    private static final class ConnectionWaiter {
+        final ConnectionCallback callback;
+        final PluginCall failureCall;
+
+        ConnectionWaiter(ConnectionCallback callback, PluginCall failureCall) {
+            this.callback = callback;
+            this.failureCall = failureCall;
+        }
     }
 
     @Override
@@ -39,32 +55,64 @@ public class PlayBillingPlugin extends Plugin implements PurchasesUpdatedListene
             .setListener(this)
             .enablePendingPurchases(PendingPurchasesParams.newBuilder().enableOneTimeProducts().build())
             .build();
+        connectToBillingService();
     }
 
-    private void ensureConnected(ConnectionCallback callback, PluginCall failureCall) {
-        if (billingClient.isReady()) {
-            callback.onReady();
-            return;
-        }
+    /**
+     * Starts (or continues) connecting to the Play Billing service using a single, plugin-lifetime
+     * listener. Play Billing keeps this listener registered across reconnects, so it must never close
+     * over a specific PluginCall — only shared state (the waiters queue) is touched here.
+     */
+    private void connectToBillingService() {
+        if (connecting) return;
+        connecting = true;
         billingClient.startConnection(new BillingClientStateListener() {
             @Override
             public void onBillingSetupFinished(@NonNull BillingResult result) {
+                connecting = false;
+                List<ConnectionWaiter> waiters = new ArrayList<>(connectionWaiters);
+                connectionWaiters.clear();
                 if (result.getResponseCode() == BillingClient.BillingResponseCode.OK) {
-                    callback.onReady();
+                    billingReady = true;
+                    for (ConnectionWaiter waiter : waiters) {
+                        waiter.callback.onReady();
+                    }
                 } else {
-                    failureCall.reject("Billing unavailable: " + result.getDebugMessage());
+                    billingReady = false;
+                    for (ConnectionWaiter waiter : waiters) {
+                        waiter.failureCall.reject("Billing unavailable: " + result.getDebugMessage());
+                    }
                 }
             }
 
             @Override
             public void onBillingServiceDisconnected() {
-                // BillingClient reconnects automatically on the next request.
+                connecting = false;
+                billingReady = false;
+                if (pendingPurchaseCall != null) {
+                    PluginCall call = pendingPurchaseCall;
+                    pendingPurchaseCall = null;
+                    call.reject("Billing service disconnected");
+                }
             }
         });
     }
 
+    private void ensureConnected(ConnectionCallback callback, PluginCall failureCall) {
+        if (billingReady && billingClient.isReady()) {
+            callback.onReady();
+            return;
+        }
+        connectionWaiters.add(new ConnectionWaiter(callback, failureCall));
+        connectToBillingService();
+    }
+
     @PluginMethod
     public void purchaseProduct(final PluginCall call) {
+        if (pendingPurchaseCall != null) {
+            call.reject("A purchase is already in progress");
+            return;
+        }
         final String productId = call.getString("productId");
         if (productId == null || productId.isEmpty()) {
             call.reject("productId is required");
@@ -106,7 +154,14 @@ public class PlayBillingPlugin extends Plugin implements PurchasesUpdatedListene
                     .build();
 
                 pendingPurchaseCall = call;
-                billingClient.launchBillingFlow(activity, flowParams);
+                BillingResult launchResult = billingClient.launchBillingFlow(activity, flowParams);
+                if (launchResult.getResponseCode() != BillingClient.BillingResponseCode.OK) {
+                    pendingPurchaseCall = null;
+                    call.reject(
+                        "Failed to launch purchase: " + launchResult.getDebugMessage(),
+                        String.valueOf(launchResult.getResponseCode())
+                    );
+                }
             });
         }, call);
     }
