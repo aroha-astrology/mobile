@@ -1,6 +1,8 @@
 package com.aroha.astrology;
 
 import android.app.Activity;
+import android.os.Handler;
+import android.os.Looper;
 import androidx.annotation.NonNull;
 import com.android.billingclient.api.BillingClient;
 import com.android.billingclient.api.BillingClientStateListener;
@@ -23,22 +25,32 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+/**
+ * All mutable state on this plugin (pendingPurchaseCall, connectionWaiters,
+ * billingReady, connecting) is only ever read or written on the Android main
+ * thread via mainHandler — the same thread Play Billing Library delivers
+ * every callback on. Capacitor dispatches @PluginMethod calls on its own
+ * background thread, so every method that touches this state hops onto the
+ * main thread first. This is plain single-thread confinement instead of
+ * locks.
+ */
 @CapacitorPlugin(name = "PlayBilling")
 public class PlayBillingPlugin extends Plugin implements PurchasesUpdatedListener {
 
-    private BillingClient billingClient;
-    /** The in-flight purchase call, resolved/rejected from onPurchasesUpdated(). */
-    private volatile PluginCall pendingPurchaseCall;
+    private final Handler mainHandler = new Handler(Looper.getMainLooper());
 
+    private BillingClient billingClient;
+    /** Main-thread only. */
+    private PluginCall pendingPurchaseCall;
+    /** Main-thread only. */
     private boolean billingReady = false;
+    /** Main-thread only. */
     private boolean connecting = false;
-    private final List<ConnectionWaiter> connectionWaiters = new ArrayList<>();
 
     private interface ConnectionCallback {
         void onReady();
     }
 
-    /** Pairs a waiting call's success/failure continuations while a connection attempt is in flight. */
     private static final class ConnectionWaiter {
         final ConnectionCallback callback;
         final PluginCall failureCall;
@@ -49,20 +61,19 @@ public class PlayBillingPlugin extends Plugin implements PurchasesUpdatedListene
         }
     }
 
+    /** Main-thread only. */
+    private final List<ConnectionWaiter> connectionWaiters = new ArrayList<>();
+
     @Override
     public void load() {
         billingClient = BillingClient.newBuilder(getContext())
             .setListener(this)
             .enablePendingPurchases(PendingPurchasesParams.newBuilder().enableOneTimeProducts().build())
             .build();
-        connectToBillingService();
+        mainHandler.post(this::connectToBillingService);
     }
 
-    /**
-     * Starts (or continues) connecting to the Play Billing service using a single, plugin-lifetime
-     * listener. Play Billing keeps this listener registered across reconnects, so it must never close
-     * over a specific PluginCall — only shared state (the waiters queue) is touched here.
-     */
+    /** Must only be called on the main thread. */
     private void connectToBillingService() {
         if (connecting) return;
         connecting = true;
@@ -74,9 +85,7 @@ public class PlayBillingPlugin extends Plugin implements PurchasesUpdatedListene
                 connectionWaiters.clear();
                 if (result.getResponseCode() == BillingClient.BillingResponseCode.OK) {
                     billingReady = true;
-                    for (ConnectionWaiter waiter : waiters) {
-                        waiter.callback.onReady();
-                    }
+                    for (ConnectionWaiter waiter : waiters) waiter.callback.onReady();
                 } else {
                     billingReady = false;
                     for (ConnectionWaiter waiter : waiters) {
@@ -98,6 +107,7 @@ public class PlayBillingPlugin extends Plugin implements PurchasesUpdatedListene
         });
     }
 
+    /** Must only be called on the main thread. */
     private void ensureConnected(ConnectionCallback callback, PluginCall failureCall) {
         if (billingReady && billingClient.isReady()) {
             callback.onReady();
@@ -109,65 +119,78 @@ public class PlayBillingPlugin extends Plugin implements PurchasesUpdatedListene
 
     @PluginMethod
     public void purchaseProduct(final PluginCall call) {
-        if (pendingPurchaseCall != null) {
-            call.reject("A purchase is already in progress");
-            return;
-        }
-        final String productId = call.getString("productId");
-        if (productId == null || productId.isEmpty()) {
-            call.reject("productId is required");
-            return;
-        }
         final Activity activity = getActivity();
         if (activity == null) {
             call.reject("No current activity");
             return;
         }
+        mainHandler.post(() -> {
+            if (pendingPurchaseCall != null) {
+                call.reject("A purchase is already in progress");
+                return;
+            }
+            final String productId = call.getString("productId");
+            if (productId == null || productId.isEmpty()) {
+                call.reject("productId is required");
+                return;
+            }
+            // Claim the slot immediately, atomically with the guard check above
+            // (both run in this same Runnable on the main thread) — so a second
+            // purchaseProduct call sees this one as in-flight even while product
+            // details are still loading, instead of only being caught after the
+            // fact deep inside the async chain.
+            pendingPurchaseCall = call;
 
-        ensureConnected(() -> {
-            QueryProductDetailsParams.Product product = QueryProductDetailsParams.Product.newBuilder()
-                .setProductId(productId)
-                .setProductType(BillingClient.ProductType.INAPP)
-                .build();
-            QueryProductDetailsParams params = QueryProductDetailsParams.newBuilder()
-                .setProductList(Collections.singletonList(product))
-                .build();
-
-            billingClient.queryProductDetailsAsync(params, (result, productDetailsResult) -> {
-                if (result.getResponseCode() != BillingClient.BillingResponseCode.OK) {
-                    call.reject("Failed to load product: " + result.getDebugMessage());
-                    return;
-                }
-                List<ProductDetails> productDetailsList = productDetailsResult.getProductDetailsList();
-                if (productDetailsList.isEmpty()) {
-                    call.reject("Unknown product: " + productId);
-                    return;
-                }
-                ProductDetails details = productDetailsList.get(0);
-
-                BillingFlowParams.ProductDetailsParams productDetailsParams =
-                    BillingFlowParams.ProductDetailsParams.newBuilder()
-                        .setProductDetails(details)
-                        .build();
-                BillingFlowParams flowParams = BillingFlowParams.newBuilder()
-                    .setProductDetailsParamsList(Collections.singletonList(productDetailsParams))
+            ensureConnected(() -> {
+                QueryProductDetailsParams.Product product = QueryProductDetailsParams.Product.newBuilder()
+                    .setProductId(productId)
+                    .setProductType(BillingClient.ProductType.INAPP)
+                    .build();
+                QueryProductDetailsParams params = QueryProductDetailsParams.newBuilder()
+                    .setProductList(Collections.singletonList(product))
                     .build();
 
-                pendingPurchaseCall = call;
-                BillingResult launchResult = billingClient.launchBillingFlow(activity, flowParams);
-                if (launchResult.getResponseCode() != BillingClient.BillingResponseCode.OK) {
-                    pendingPurchaseCall = null;
-                    call.reject(
-                        "Failed to launch purchase: " + launchResult.getDebugMessage(),
-                        String.valueOf(launchResult.getResponseCode())
-                    );
-                }
-            });
-        }, call);
+                billingClient.queryProductDetailsAsync(params, (result, productDetailsResult) -> {
+                    if (result.getResponseCode() != BillingClient.BillingResponseCode.OK) {
+                        pendingPurchaseCall = null;
+                        call.reject("Failed to load product: " + result.getDebugMessage());
+                        return;
+                    }
+                    List<ProductDetails> productDetailsList = productDetailsResult.getProductDetailsList();
+                    if (productDetailsList.isEmpty()) {
+                        pendingPurchaseCall = null;
+                        call.reject("Unknown product: " + productId);
+                        return;
+                    }
+                    ProductDetails details = productDetailsList.get(0);
+
+                    BillingFlowParams.ProductDetailsParams productDetailsParams =
+                        BillingFlowParams.ProductDetailsParams.newBuilder()
+                            .setProductDetails(details)
+                            .build();
+                    BillingFlowParams flowParams = BillingFlowParams.newBuilder()
+                        .setProductDetailsParamsList(Collections.singletonList(productDetailsParams))
+                        .build();
+
+                    BillingResult launchResult = billingClient.launchBillingFlow(activity, flowParams);
+                    if (launchResult.getResponseCode() != BillingClient.BillingResponseCode.OK) {
+                        pendingPurchaseCall = null;
+                        call.reject(
+                            "Failed to launch purchase: " + launchResult.getDebugMessage(),
+                            String.valueOf(launchResult.getResponseCode())
+                        );
+                    }
+                    // else: leave pendingPurchaseCall set — onPurchasesUpdated settles it.
+                });
+            }, call);
+        });
     }
 
     @Override
     public void onPurchasesUpdated(@NonNull BillingResult result, List<Purchase> purchases) {
+        // Play Billing Library invokes this on the same thread the client was
+        // built/connected on (the main thread, via mainHandler above) — already
+        // safe to touch pendingPurchaseCall without an extra hop.
         PluginCall call = pendingPurchaseCall;
         pendingPurchaseCall = null;
         if (call == null) return;
@@ -185,7 +208,7 @@ public class PlayBillingPlugin extends Plugin implements PurchasesUpdatedListene
 
     @PluginMethod
     public void queryUnconsumedPurchases(final PluginCall call) {
-        ensureConnected(() -> {
+        mainHandler.post(() -> ensureConnected(() -> {
             QueryPurchasesParams params = QueryPurchasesParams.newBuilder()
                 .setProductType(BillingClient.ProductType.INAPP)
                 .build();
@@ -204,7 +227,7 @@ public class PlayBillingPlugin extends Plugin implements PurchasesUpdatedListene
                 ret.put("purchases", array);
                 call.resolve(ret);
             });
-        }, call);
+        }, call));
     }
 
     private JSObject purchaseToJSObject(Purchase purchase) {
