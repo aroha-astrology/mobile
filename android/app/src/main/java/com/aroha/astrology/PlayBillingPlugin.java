@@ -152,13 +152,13 @@ public class PlayBillingPlugin extends Plugin implements PurchasesUpdatedListene
 
                 billingClient.queryProductDetailsAsync(params, (result, productDetailsResult) -> {
                     if (result.getResponseCode() != BillingClient.BillingResponseCode.OK) {
-                        pendingPurchaseCall = null;
+                        if (pendingPurchaseCall == call) pendingPurchaseCall = null;
                         call.reject("Failed to load product: " + result.getDebugMessage());
                         return;
                     }
                     List<ProductDetails> productDetailsList = productDetailsResult.getProductDetailsList();
                     if (productDetailsList.isEmpty()) {
-                        pendingPurchaseCall = null;
+                        if (pendingPurchaseCall == call) pendingPurchaseCall = null;
                         call.reject("Unknown product: " + productId);
                         return;
                     }
@@ -174,7 +174,7 @@ public class PlayBillingPlugin extends Plugin implements PurchasesUpdatedListene
 
                     BillingResult launchResult = billingClient.launchBillingFlow(activity, flowParams);
                     if (launchResult.getResponseCode() != BillingClient.BillingResponseCode.OK) {
-                        pendingPurchaseCall = null;
+                        if (pendingPurchaseCall == call) pendingPurchaseCall = null;
                         call.reject(
                             "Failed to launch purchase: " + launchResult.getDebugMessage(),
                             String.valueOf(launchResult.getResponseCode())
