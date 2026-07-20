@@ -44,9 +44,12 @@
     <!-- Permissions -->
 
     <uses-permission android:name="android.permission.INTERNET" />
-    <!-- Backs the web frontend's navigator.geolocation calls (Panchang page) -->
+    <!-- Backs the web frontend's navigator.geolocation calls (Panchang page).
+         COARSE only, deliberately: every getCurrentPosition() call site passes
+         enableHighAccuracy:false and only needs city-level precision, so FINE
+         bought nothing while drawing extra Play review scrutiny and a scarier
+         runtime permission dialog. Don't re-add it without a real need. -->
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
-    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <!-- Required on Android 13+ (API 33) for runtime notification permission -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="com.android.vending.BILLING" />
