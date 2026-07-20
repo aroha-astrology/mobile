@@ -8,9 +8,7 @@ workflows:
       xcode: latest
     scripts:
       - name: Enable pnpm via corepack
-        script: |
-          corepack enable
-          corepack prepare pnpm@9 --activate
+        script: corepack enable
       - name: Install dependencies
         script: pnpm install --frozen-lockfile
       - name: Build web assets (fallback page)
