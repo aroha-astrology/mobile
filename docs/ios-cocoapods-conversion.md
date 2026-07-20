@@ -1,5 +1,15 @@
 # iOS: convert from Swift Package Manager to CocoaPods
 
+> **RESOLVED 2026-07-20.** The conversion described below has been done — `ios/`
+> is now CocoaPods-based (`Podfile`, `App.xcworkspace`, no `CapApp-SPM`). The
+> `PRODUCT_BUNDLE_IDENTIFIER` mismatch (`com.arohaastrology.app` vs the Firebase
+> app's `com.aroha.astrology`) was fixed at the same time — the regenerated
+> project now picks up `com.aroha.astrology` from `capacitor.config.ts`
+> automatically. `codemagic.yaml` runs `pod install` + an unsigned simulator
+> build on Codemagic's macOS runners, so no local Mac is needed going forward.
+> Kept below for history / as a reference if the platform ever needs
+> regenerating again.
+
 ## Why
 
 The iOS project was scaffolded in **Swift Package Manager** mode (`ios/App/CapApp-SPM`,

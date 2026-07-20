@@ -1,0 +1,44 @@
+workflows:
+  ios-unsigned-build:
+    name: iOS unsigned build (compile check)
+    max_build_duration: 30
+    instance_type: mac_mini_m2
+    environment:
+      node: 20
+      xcode: latest
+    scripts:
+      - name: Enable pnpm via corepack
+        script: |
+          corepack enable
+          corepack prepare pnpm@9 --activate
+      - name: Install dependencies
+        script: pnpm install --frozen-lockfile
+      - name: Build web assets (fallback page)
+        script: pnpm build
+      - name: Sync Capacitor iOS platform
+        script: pnpm exec cap sync ios
+      - name: Install CocoaPods dependencies
+        script: |
+          cd ios/App
+          pod install
+      - name: Build for iOS Simulator (unsigned)
+        script: |
+          cd ios/App
+          xcodebuild build \
+            -workspace App.xcworkspace \
+            -scheme App \
+            -configuration Debug \
+            -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO
+    artifacts:
+      - ios/App/build/Build/Products/**/*.app
+      - ios/App/Podfile.lock
+    publishing:
+      email:
+        recipients:
+          - rtohellrider@gmail.com
+        notify:
+          success: true
+          failure: true
