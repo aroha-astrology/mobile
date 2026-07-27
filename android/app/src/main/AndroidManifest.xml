@@ -53,4 +53,14 @@
     <!-- Required on Android 13+ (API 33) for runtime notification permission -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="com.android.vending.BILLING" />
+    <!-- Backs the web frontend's navigator.mediaDevices.getUserMedia() call in the Palm
+         Reading capture wizard. Capacitor's WebView already maps the WEBKIT
+         VIDEO_CAPTURE permission request to this manifest entry
+         (BridgeWebChromeClient.onPermissionRequest) — without it, getUserMedia rejects
+         with NotAllowedError even if the user taps "allow" in the runtime prompt. -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <!-- Not required: the capture wizard always offers a "upload a photo instead" fallback,
+         so a camera-less device (or an emulator) shouldn't be excluded from the Play Store
+         listing over this one feature. -->
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
 </manifest>
