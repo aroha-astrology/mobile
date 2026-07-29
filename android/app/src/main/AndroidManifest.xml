@@ -63,4 +63,15 @@
          so a camera-less device (or an emulator) shouldn't be excluded from the Play Store
          listing over this one feature. -->
     <uses-feature android:name="android.hardware.camera" android:required="false" />
+    <!-- Backs the web frontend's navigator.mediaDevices.getUserMedia({ audio }) call in
+         realtime Voice Chat. Exactly the same Capacitor plumbing as CAMERA above: the
+         WebView maps the WEBKIT AUDIO_CAPTURE permission request onto this manifest entry
+         (BridgeWebChromeClient.onPermissionRequest), and without it getUserMedia rejects
+         with NotAllowedError even after the user taps "allow" in the runtime prompt.
+         Voice Chat ships behind a feature flag that defaults to off, so declaring this
+         does not by itself expose any recording capability. -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <!-- Not required, same rationale as the camera feature above: a device without a
+         microphone should still be able to install the app and use everything else. -->
+    <uses-feature android:name="android.hardware.microphone" android:required="false" />
 </manifest>

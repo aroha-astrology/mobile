@@ -24,6 +24,8 @@
 	<true/>
 	<key>NSCameraUsageDescription</key>
 	<string>Aroha Astrology uses your camera to capture photos of your palm for your Palm Reading. You can also upload existing photos instead.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Aroha Astrology uses your microphone for Voice Chat, so you can speak your astrology questions and hear the answers. Your voice is only sent while a voice session is active.</string>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>
