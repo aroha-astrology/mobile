@@ -71,6 +71,13 @@
          Voice Chat ships behind a feature flag that defaults to off, so declaring this
          does not by itself expose any recording capability. -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <!-- Required alongside RECORD_AUDIO above for the SAME WebKit AUDIO_CAPTURE request.
+         BridgeWebChromeClient.onPermissionRequest asks for both RECORD_AUDIO and this one
+         together and grants only if every requested permission is present; Android silently
+         denies an undeclared permission without ever prompting for it, so omitting this one
+         made the whole audio grant fail — RECORD_AUDIO alone was not enough, and no runtime
+         prompt ever surfaced the gap. This is what actually broke voice chat's mic access. -->
+    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
     <!-- Not required, same rationale as the camera feature above: a device without a
          microphone should still be able to install the app and use everything else. -->
     <uses-feature android:name="android.hardware.microphone" android:required="false" />
