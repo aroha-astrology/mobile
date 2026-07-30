@@ -13,4 +13,9 @@ ext {
     androidxJunitVersion = '1.3.0'
     androidxEspressoCoreVersion = '3.7.0'
     cordovaAndroidVersion = '14.0.1'
+    // Without this, @capacitor-firebase/authentication only compiles against
+    // play-services-auth (compileOnly) but never bundles it — Google
+    // sign-in throws a ClassNotFoundException at runtime instead of opening
+    // the native chooser. See docs/setup-google.md in the plugin's repo.
+    rgcfaIncludeGoogle = true
 }
