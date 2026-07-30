@@ -29,8 +29,17 @@ const config: CapacitorConfig = {
   },
   plugins: {
     FirebaseAuthentication: {
+      // Global skipNativeAuth stays false so the plugin keeps transparently
+      // intercepting the JS SDK's signInWithPhoneNumber() (used by
+      // hooks/usePhoneAuth.ts, unchanged) and running it natively instead of
+      // an invisible reCAPTCHA inside the webview. Google sign-in opts into
+      // skipNativeAuth per-call instead (see hooks/useGoogleAuth.ts) — the
+      // webview's Firebase JS SDK session, not the native one, is what
+      // authHeader() in lib/api.ts reads from. Apple sign-in (iOS only,
+      // hooks/useAppleAuth.ts) follows the same per-call skipNativeAuth
+      // pattern as Google.
       skipNativeAuth: false,
-      providers: ['phone'],
+      providers: ['phone', 'google.com', 'apple.com'],
     },
   },
 };

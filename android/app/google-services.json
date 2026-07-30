@@ -12,7 +12,28 @@
           "package_name": "com.aroha.astrology"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "498372917142-697dgp0pud5i7bk3bhl4v9cj8musor4b.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.aroha.astrology",
+            "certificate_hash": "42d1cb3b9c59d34ab30abad75c6f0729f4f5c106"
+          }
+        },
+        {
+          "client_id": "498372917142-7kt2s12t1piohvr1u18dq6gnlq884lsi.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.aroha.astrology",
+            "certificate_hash": "9c76b2071bfac0a92f436ada587449c832d1e3fb"
+          }
+        },
+        {
+          "client_id": "498372917142-305g57ahtjmssrug62s5f3jkrqs823i1.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyCFF8lusYPhIGZHXRC8EeyEqVwo2hC_Wzw"
@@ -20,7 +41,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "498372917142-305g57ahtjmssrug62s5f3jkrqs823i1.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "498372917142-d9vfd1ckq5i5sk83i1tgp3m5sgeqdcs5.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.arohaastrology.app"
+              }
+            }
+          ]
         }
       }
     },
@@ -31,7 +64,12 @@
           "package_name": "com.arohaastrology.app"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "498372917142-305g57ahtjmssrug62s5f3jkrqs823i1.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyCFF8lusYPhIGZHXRC8EeyEqVwo2hC_Wzw"
@@ -39,7 +77,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "498372917142-305g57ahtjmssrug62s5f3jkrqs823i1.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "498372917142-d9vfd1ckq5i5sk83i1tgp3m5sgeqdcs5.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.arohaastrology.app"
+              }
+            }
+          ]
         }
       }
     }
