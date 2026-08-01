@@ -1,7 +1,13 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- allowBackup=false deliberately: this is a WebView shell, so Android's
+         Auto Backup would sync the WebView's localStorage to the user's Google
+         Drive — and that store holds the Firebase auth session, not just UI
+         preferences. An account credential does not belong in a cloud backup
+         the app does not control, and nothing here is worth restoring to a new
+         device anyway (the server holds the profile; signing in restores it). -->
     <application
-        android:allowBackup="true"
+        android:allowBackup="false"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
