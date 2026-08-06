@@ -10,5 +10,8 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(TtsPlugin.class);
         registerPlugin(AppReviewPlugin.class);
         super.onCreate(savedInstanceState);
+        // Replaces the WebChromeClient Bridge installs in initWebView(), purely to
+        // narrow the geolocation permission request to the one this app declares.
+        getBridge().getWebView().setWebChromeClient(new CoarseGeoWebChromeClient(getBridge()));
     }
 }
