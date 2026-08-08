@@ -29,6 +29,32 @@
 }
 -keep public class * extends com.getcapacitor.Plugin { *; }
 
+# ...and Capacitor's own runtime, which the rules above do NOT cover: they
+# protect plugin SUBCLASSES, while the bridge machinery that drives them lives
+# in com.getcapacitor.* and was left exposed to the optimizer.
+#
+# That crashed the app on every launch for logged-in users. R8's usage.txt
+# showed it deleting PluginHandle.pluginAnnotation and getPluginAnnotation() —
+# reachable only by reflection, so the optimizer sees them as dead. Bridge
+# .getPermissionStates() then does
+#
+#     CapacitorPlugin annotation = plugin.getPluginHandle().getPluginAnnotation();
+#     for (Permission perm : annotation.permissions())   // no null check
+#
+# and NPEs on the CapacitorPlugins thread, which kills the process. Only
+# logged-in users hit it, because checkPermissions() is called from
+# PushNotificationListener (gated on userId) and PermissionsPrompt (gated on
+# profileCompletedAt) and nowhere else.
+#
+# Narrow keeps just move the crash — usage.txt shows PluginMethodHandle
+# .getMethod() and PluginResult.getWrappedResult() stripped too, and the whole
+# bridge is reflection-driven. Keep the package.
+#
+# Regression check: after any proguard or AGP change, confirm
+#   android/app/build/outputs/mapping/release/usage.txt
+# has no "com.getcapacitor.PluginHandle:" block.
+-keep class com.getcapacitor.** { *; }
+
 # This app's own native Capacitor plugins (PlayBillingPlugin, TtsPlugin).
 -keep class com.aroha.astrology.** { *; }
 
