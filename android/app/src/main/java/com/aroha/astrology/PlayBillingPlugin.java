@@ -134,6 +134,12 @@ public class PlayBillingPlugin extends Plugin implements PurchasesUpdatedListene
                 call.reject("productId is required");
                 return;
             }
+            // Echoed back by Google as `obfuscatedExternalAccountId` on the purchase
+            // resource — the only way our Real-time Developer Notifications webhook
+            // (billing.service.ts's reconcileGooglePlayNotification) can tell which
+            // user a server-pushed purchase notification belongs to, since RTDN
+            // itself only carries the purchase token + product id.
+            final String userId = call.getString("userId");
             // Claim the slot immediately, atomically with the guard check above
             // (both run in this same Runnable on the main thread) — so a second
             // purchaseProduct call sees this one as in-flight even while product
@@ -168,9 +174,12 @@ public class PlayBillingPlugin extends Plugin implements PurchasesUpdatedListene
                         BillingFlowParams.ProductDetailsParams.newBuilder()
                             .setProductDetails(details)
                             .build();
-                    BillingFlowParams flowParams = BillingFlowParams.newBuilder()
-                        .setProductDetailsParamsList(Collections.singletonList(productDetailsParams))
-                        .build();
+                    BillingFlowParams.Builder flowParamsBuilder = BillingFlowParams.newBuilder()
+                        .setProductDetailsParamsList(Collections.singletonList(productDetailsParams));
+                    if (userId != null && !userId.isEmpty()) {
+                        flowParamsBuilder.setObfuscatedAccountId(userId);
+                    }
+                    BillingFlowParams flowParams = flowParamsBuilder.build();
 
                     BillingResult launchResult = billingClient.launchBillingFlow(activity, flowParams);
                     if (launchResult.getResponseCode() != BillingClient.BillingResponseCode.OK) {
