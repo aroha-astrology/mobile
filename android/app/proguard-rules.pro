@@ -55,8 +55,10 @@
 # has no "com.getcapacitor.PluginHandle:" block.
 -keep class com.getcapacitor.** { *; }
 
-# This app's own native Capacitor plugins (PlayBillingPlugin, TtsPlugin).
--keep class com.aroha.astrology.** { *; }
+# This app's own native Capacitor plugins (PlayBillingPlugin, TtsPlugin, …) are
+# already kept by the `extends com.getcapacitor.Plugin` rule above, and
+# MainActivity is kept through the manifest — so no blanket package keep here
+# (removed 2026-09-24 for Play Console's low optimisation/obfuscation score).
 
 # capacitor-firebase-messaging's FCM service isn't a com.getcapacitor.Plugin
 # subclass, so the rule above doesn't cover it.
@@ -71,11 +73,10 @@
 -dontwarn com.google.android.gms.auth.**
 -dontwarn com.facebook.**
 
-# Google Play Billing Library — narrow restatement of the public API surface
-# PlayBillingPlugin.java calls directly, on top of the AAR's own bundled
-# consumer rules.
--keep class com.android.billingclient.api.** { *; }
--keep class com.android.vending.billing.** { *; }
+# Google Play Billing ships its own consumer ProGuard rules in the AAR. The
+# blanket keeps that used to sit here pinned ~1,800 entries R8 could otherwise
+# shrink and obfuscate; removed 2026-09-24. If a billing call ever breaks in a
+# release build, add a rule scoped to that exact class, not the package.
 
 # Deliberately NOT keeping com.google.firebase.** or com.google.android.gms.**
 # broadly — firebase-auth and firebase-messaging ship their own consumer
