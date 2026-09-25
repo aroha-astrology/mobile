@@ -140,6 +140,11 @@ public class PlayBillingPlugin extends Plugin implements PurchasesUpdatedListene
             // user a server-pushed purchase notification belongs to, since RTDN
             // itself only carries the purchase token + product id.
             final String userId = call.getString("userId");
+            // "subs" buys a subscription (the Aroha Pass); anything else is a one-time
+            // top-up exactly as before. A subscription needs the base plan to buy —
+            // each Aroha Pass price variant is its own base plan in Play Console.
+            final boolean isSubscription = "subs".equals(call.getString("productType"));
+            final String basePlanId = call.getString("basePlanId");
             // Claim the slot immediately, atomically with the guard check above
             // (both run in this same Runnable on the main thread) — so a second
             // purchaseProduct call sees this one as in-flight even while product
@@ -150,7 +155,7 @@ public class PlayBillingPlugin extends Plugin implements PurchasesUpdatedListene
             ensureConnected(() -> {
                 QueryProductDetailsParams.Product product = QueryProductDetailsParams.Product.newBuilder()
                     .setProductId(productId)
-                    .setProductType(BillingClient.ProductType.INAPP)
+                    .setProductType(isSubscription ? BillingClient.ProductType.SUBS : BillingClient.ProductType.INAPP)
                     .build();
                 QueryProductDetailsParams params = QueryProductDetailsParams.newBuilder()
                     .setProductList(Collections.singletonList(product))
@@ -170,10 +175,19 @@ public class PlayBillingPlugin extends Plugin implements PurchasesUpdatedListene
                     }
                     ProductDetails details = productDetailsList.get(0);
 
-                    BillingFlowParams.ProductDetailsParams productDetailsParams =
+                    BillingFlowParams.ProductDetailsParams.Builder detailsParamsBuilder =
                         BillingFlowParams.ProductDetailsParams.newBuilder()
-                            .setProductDetails(details)
-                            .build();
+                            .setProductDetails(details);
+                    if (isSubscription) {
+                        String offerToken = offerTokenFor(details, basePlanId);
+                        if (offerToken == null) {
+                            if (pendingPurchaseCall == call) pendingPurchaseCall = null;
+                            call.reject("Unknown base plan: " + basePlanId);
+                            return;
+                        }
+                        detailsParamsBuilder.setOfferToken(offerToken);
+                    }
+                    BillingFlowParams.ProductDetailsParams productDetailsParams = detailsParamsBuilder.build();
                     BillingFlowParams.Builder flowParamsBuilder = BillingFlowParams.newBuilder()
                         .setProductDetailsParamsList(Collections.singletonList(productDetailsParams));
                     if (userId != null && !userId.isEmpty()) {
@@ -239,12 +253,56 @@ public class PlayBillingPlugin extends Plugin implements PurchasesUpdatedListene
         }, call));
     }
 
+    /**
+     * The offer token for a subscription's base plan: its plain base-plan offer
+     * (no offer id) when there is one, otherwise any offer on that base plan.
+     * Null when the product has no such base plan.
+     */
+    private static String offerTokenFor(ProductDetails details, String basePlanId) {
+        List<ProductDetails.SubscriptionOfferDetails> offers = details.getSubscriptionOfferDetails();
+        if (offers == null || basePlanId == null) return null;
+        String fallback = null;
+        for (ProductDetails.SubscriptionOfferDetails offer : offers) {
+            if (!basePlanId.equals(offer.getBasePlanId())) continue;
+            if (offer.getOfferId() == null) return offer.getOfferToken();
+            if (fallback == null) fallback = offer.getOfferToken();
+        }
+        return fallback;
+    }
+
+    /** Active subscriptions on this Play account — how the app re-links an Aroha Pass after a reinstall. */
+    @PluginMethod
+    public void queryActiveSubscriptions(final PluginCall call) {
+        mainHandler.post(() -> ensureConnected(() -> {
+            QueryPurchasesParams params = QueryPurchasesParams.newBuilder()
+                .setProductType(BillingClient.ProductType.SUBS)
+                .build();
+            billingClient.queryPurchasesAsync(params, (result, purchases) -> {
+                if (result.getResponseCode() != BillingClient.BillingResponseCode.OK) {
+                    call.reject("Failed to query subscriptions: " + result.getDebugMessage());
+                    return;
+                }
+                JSArray array = new JSArray();
+                for (Purchase purchase : purchases) {
+                    if (purchase.getPurchaseState() == Purchase.PurchaseState.PURCHASED) {
+                        array.put(purchaseToJSObject(purchase));
+                    }
+                }
+                JSObject ret = new JSObject();
+                ret.put("purchases", array);
+                call.resolve(ret);
+            });
+        }, call));
+    }
+
     private JSObject purchaseToJSObject(Purchase purchase) {
         JSObject obj = new JSObject();
         List<String> products = purchase.getProducts();
         obj.put("productId", products.isEmpty() ? "" : products.get(0));
         obj.put("purchaseToken", purchase.getPurchaseToken());
         obj.put("orderId", purchase.getOrderId() == null ? "" : purchase.getOrderId());
+        // A subscription is acknowledged by the server (pass-play.service.ts), never consumed.
+        obj.put("acknowledged", purchase.isAcknowledged());
         return obj;
     }
 }
