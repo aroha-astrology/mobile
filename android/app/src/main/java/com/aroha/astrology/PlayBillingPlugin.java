@@ -145,6 +145,10 @@ public class PlayBillingPlugin extends Plugin implements PurchasesUpdatedListene
             // each Aroha Pass price variant is its own base plan in Play Console.
             final boolean isSubscription = "subs".equals(call.getString("productType"));
             final String basePlanId = call.getString("basePlanId");
+            // Set when a subscriber moves up to a higher Aroha Pass: the token of the
+            // subscription they hold now. Play swaps it for the new base plan at once
+            // and charges only the difference for the days left in the period.
+            final String oldPurchaseToken = call.getString("oldPurchaseToken");
             // Claim the slot immediately, atomically with the guard check above
             // (both run in this same Runnable on the main thread) — so a second
             // purchaseProduct call sees this one as in-flight even while product
@@ -192,6 +196,16 @@ public class PlayBillingPlugin extends Plugin implements PurchasesUpdatedListene
                         .setProductDetailsParamsList(Collections.singletonList(productDetailsParams));
                     if (userId != null && !userId.isEmpty()) {
                         flowParamsBuilder.setObfuscatedAccountId(userId);
+                    }
+                    if (isSubscription && oldPurchaseToken != null && !oldPurchaseToken.isEmpty()) {
+                        flowParamsBuilder.setSubscriptionUpdateParams(
+                            BillingFlowParams.SubscriptionUpdateParams.newBuilder()
+                                .setOldPurchaseToken(oldPurchaseToken)
+                                .setSubscriptionReplacementMode(
+                                    BillingFlowParams.SubscriptionUpdateParams.ReplacementMode.CHARGE_PRORATED_PRICE
+                                )
+                                .build()
+                        );
                     }
                     BillingFlowParams flowParams = flowParamsBuilder.build();
 
