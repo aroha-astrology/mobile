@@ -47,6 +47,16 @@
         />
     </application>
 
+    <!-- The apps StorySharePlugin hands a Daily Story's picture to. Android 11+ hides
+         other apps from this one unless they are named here, and some phones then
+         refuse to start them by package name. -->
+    <queries>
+        <package android:name="com.whatsapp" />
+        <package android:name="com.whatsapp.w4b" />
+        <package android:name="com.instagram.android" />
+        <package android:name="com.twitter.android" />
+    </queries>
+
     <!-- Permissions -->
 
     <uses-permission android:name="android.permission.INTERNET" />

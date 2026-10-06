@@ -13,6 +13,7 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(InstallReferrerPlugin.class);
         registerPlugin(ImageSaverPlugin.class);
         registerPlugin(FileSaverPlugin.class);
+        registerPlugin(StorySharePlugin.class);
         super.onCreate(savedInstanceState);
         // Replaces the WebChromeClient Bridge installs in initWebView(), purely to
         // narrow the geolocation permission request to the one this app declares.
