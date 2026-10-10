@@ -4,4 +4,6 @@
     <string name="title_activity_main">Aroha Astrology</string>
     <string name="package_name">com.aroha.astrology</string>
     <string name="custom_url_scheme">com.aroha.astrology</string>
+    <!-- Name of the notification channel the voice call's ongoing notification sits in. -->
+    <string name="voice_call_channel">Voice call</string>
 </resources>

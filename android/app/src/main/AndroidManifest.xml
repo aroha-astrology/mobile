@@ -26,6 +26,14 @@
             </intent-filter>
         </activity>
 
+        <!-- Keeps the microphone alive while a voice call is running and the app is minimized;
+             see VoiceCallService. Not exported: only this app starts it. The type has to be
+             declared here as well as in the startForeground() call. -->
+        <service
+            android:name=".VoiceCallService"
+            android:exported="false"
+            android:foregroundServiceType="microphone" />
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"
@@ -97,4 +105,11 @@
     <!-- Not required, same rationale as the camera feature above: a device without a
          microphone should still be able to install the app and use everything else. -->
     <uses-feature android:name="android.hardware.microphone" android:required="false" />
+    <!-- A voice call keeps running while the app is minimized, which Android only allows
+         for an app running a foreground service (VoiceCallService). Android 14 and later
+         want the general permission and the one for the service's type, MICROPHONE.
+         Google Play asks for a declaration of this use in Play Console (App content, then
+         Foreground service permissions) before it accepts the build. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
 </manifest>
