@@ -8,6 +8,8 @@ import com.android.billingclient.api.BillingClient;
 import com.android.billingclient.api.BillingClientStateListener;
 import com.android.billingclient.api.BillingFlowParams;
 import com.android.billingclient.api.BillingResult;
+import com.android.billingclient.api.InAppMessageParams;
+import com.android.billingclient.api.InAppMessageResult;
 import com.android.billingclient.api.PendingPurchasesParams;
 import com.android.billingclient.api.ProductDetails;
 import com.android.billingclient.api.Purchase;
@@ -284,6 +286,87 @@ public class PlayBillingPlugin extends Plugin implements PurchasesUpdatedListene
         return fallback;
     }
 
+    /**
+     * Shows Google Play's own "your payment was declined" snackbar when this Play account has a
+     * subscription in a grace period or on account hold, with Google's deep link to fix the
+     * payment method (Play Billing's In-App Messaging; Google asks apps to call it when the app
+     * opens). Resolves {updated: true, purchaseToken} when the user fixed it from there, so the
+     * app can re-confirm the Pass at once; {updated: false} when nothing was shown or changed.
+     */
+    @PluginMethod
+    public void showPaymentIssueMessage(final PluginCall call) {
+        final Activity activity = getActivity();
+        if (activity == null) {
+            call.reject("No current activity");
+            return;
+        }
+        mainHandler.post(() -> ensureConnected(() -> {
+            InAppMessageParams params = InAppMessageParams.newBuilder()
+                .addInAppMessageCategoryToShow(InAppMessageParams.InAppMessageCategoryId.TRANSACTIONAL)
+                .build();
+            billingClient.showInAppMessages(activity, params, (InAppMessageResult result) -> {
+                JSObject ret = new JSObject();
+                boolean updated = result.getResponseCode()
+                    == InAppMessageResult.InAppMessageResponseCode.SUBSCRIPTION_STATUS_UPDATED;
+                ret.put("updated", updated);
+                if (updated && result.getPurchaseToken() != null) {
+                    ret.put("purchaseToken", result.getPurchaseToken());
+                }
+                call.resolve(ret);
+            });
+        }, call));
+    }
+
+    /**
+     * What Google Play will actually charge for each base plan of a subscription, in the
+     * user's own currency (the price shown on the Pass page must be Play's, not ours).
+     * Resolves {prices: [{basePlanId, formattedPrice, priceAmountMicros, currencyCode}]}.
+     */
+    @PluginMethod
+    public void getSubscriptionPrices(final PluginCall call) {
+        final String productId = call.getString("productId");
+        if (productId == null || productId.isEmpty()) {
+            call.reject("productId is required");
+            return;
+        }
+        mainHandler.post(() -> ensureConnected(() -> {
+            QueryProductDetailsParams.Product product = QueryProductDetailsParams.Product.newBuilder()
+                .setProductId(productId)
+                .setProductType(BillingClient.ProductType.SUBS)
+                .build();
+            QueryProductDetailsParams params = QueryProductDetailsParams.newBuilder()
+                .setProductList(Collections.singletonList(product))
+                .build();
+            billingClient.queryProductDetailsAsync(params, (result, productDetailsResult) -> {
+                if (result.getResponseCode() != BillingClient.BillingResponseCode.OK) {
+                    call.reject("Failed to load product: " + result.getDebugMessage());
+                    return;
+                }
+                JSArray prices = new JSArray();
+                for (ProductDetails details : productDetailsResult.getProductDetailsList()) {
+                    List<ProductDetails.SubscriptionOfferDetails> offers = details.getSubscriptionOfferDetails();
+                    if (offers == null) continue;
+                    for (ProductDetails.SubscriptionOfferDetails offer : offers) {
+                        // The plain base-plan price only, not a promotional offer's.
+                        if (offer.getOfferId() != null) continue;
+                        List<ProductDetails.PricingPhase> phases = offer.getPricingPhases().getPricingPhaseList();
+                        if (phases.isEmpty()) continue;
+                        ProductDetails.PricingPhase recurring = phases.get(phases.size() - 1);
+                        JSObject price = new JSObject();
+                        price.put("basePlanId", offer.getBasePlanId());
+                        price.put("formattedPrice", recurring.getFormattedPrice());
+                        price.put("priceAmountMicros", recurring.getPriceAmountMicros());
+                        price.put("currencyCode", recurring.getPriceCurrencyCode());
+                        prices.put(price);
+                    }
+                }
+                JSObject ret = new JSObject();
+                ret.put("prices", prices);
+                call.resolve(ret);
+            });
+        }, call));
+    }
+
     /** Active subscriptions on this Play account — how the app re-links an Aroha Pass after a reinstall. */
     @PluginMethod
     public void queryActiveSubscriptions(final PluginCall call) {
@@ -317,6 +400,10 @@ public class PlayBillingPlugin extends Plugin implements PurchasesUpdatedListene
         obj.put("orderId", purchase.getOrderId() == null ? "" : purchase.getOrderId());
         // A subscription is acknowledged by the server (pass-play.service.ts), never consumed.
         obj.put("acknowledged", purchase.isAcknowledged());
+        // "pending": paid by a slow method (some UPI and cash options) that Google has not
+        // confirmed yet. Nothing is granted until it is; the server learns of it by RTDN.
+        obj.put("purchaseState",
+            purchase.getPurchaseState() == Purchase.PurchaseState.PENDING ? "pending" : "purchased");
         return obj;
     }
 }
