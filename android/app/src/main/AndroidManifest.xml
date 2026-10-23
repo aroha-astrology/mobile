@@ -34,6 +34,19 @@
             android:exported="false"
             android:foregroundServiceType="microphone" />
 
+        <!-- The Right now home-screen widget. Exported so the launcher can bind it; it only reads
+             the place the app stored and a public, anonymous endpoint (see LiveNowWidgetProvider). -->
+        <receiver
+            android:name=".LiveNowWidgetProvider"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/live_now_widget_info" />
+        </receiver>
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"
@@ -112,4 +125,6 @@
          Foreground service permissions) before it accepts the build. -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
+    <!-- A short tick in the Morning Ritual (AppHapticsPlugin). A normal permission, granted at install. -->
+    <uses-permission android:name="android.permission.VIBRATE" />
 </manifest>

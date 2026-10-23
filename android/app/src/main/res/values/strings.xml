@@ -6,4 +6,6 @@
     <string name="custom_url_scheme">com.aroha.astrology</string>
     <!-- Name of the notification channel the voice call's ongoing notification sits in. -->
     <string name="voice_call_channel">Voice call</string>
+    <!-- Shown in the launcher's widget picker. -->
+    <string name="widget_live_now_description">What is running right now: the hora, the choghadiya, Rahu Kaal and the next good window.</string>
 </resources>

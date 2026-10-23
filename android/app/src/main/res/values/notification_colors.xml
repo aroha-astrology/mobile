@@ -2,4 +2,8 @@
 <resources>
     <!-- Badge tint FCM applies behind the white notification silhouette; sampled from the brand emblem's navy -->
     <color name="notification_icon_color">#223F67</color>
+    <!-- The Right now home-screen widget (LiveNowWidgetProvider) -->
+    <color name="widget_accent">#D4AF37</color>
+    <color name="widget_text">#F5F1E6</color>
+    <color name="widget_text_soft">#B9B4C8</color>
 </resources>
