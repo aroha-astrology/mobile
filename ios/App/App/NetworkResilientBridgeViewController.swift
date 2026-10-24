@@ -28,6 +28,8 @@ class NetworkResilientBridgeViewController: CAPBridgeViewController {
 
     override func capacitorDidLoad() {
         super.capacitorDidLoad()
+        // The local StoreKit 2 plugin (AppStorePlugin.swift) is not an npm package, so it is registered here.
+        bridge?.registerPluginInstance(AppStorePlugin())
         guard let webView = webView else { return }
         // Capacitor's own navigation delegate handles JS-bridge injection and
         // the custom asset scheme — it must keep receiving every call. We
