@@ -49,4 +49,24 @@ public class AppSettingsPlugin extends Plugin {
             }
         }
     }
+
+    /**
+     * Opens this app's details page in the system settings. The microphone,
+     * camera and location switches live under its Permissions entry, and after
+     * "Don't ask again" the system dialog never returns, so this is the only way
+     * back. Added for the 1.19 build (versionCode 22); the web layer
+     * (lib/app-settings.ts canOpenAppSettings) gates on that build number.
+     */
+    @PluginMethod
+    public void openAppSettings(final PluginCall call) {
+        final String packageName = getContext().getPackageName();
+        Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:" + packageName));
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        try {
+            getContext().startActivity(intent);
+            call.resolve();
+        } catch (ActivityNotFoundException e) {
+            call.reject("No settings screen available");
+        }
+    }
 }
